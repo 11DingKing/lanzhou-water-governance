@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"strings"
 )
 
 func WithTx(ctx context.Context, db *sql.DB, fn func(*sql.Tx) error) error {
@@ -24,8 +25,12 @@ func WithTx(ctx context.Context, db *sql.DB, fn func(*sql.Tx) error) error {
 	return nil
 }
 func IsConstraint(err error) bool {
-	return err != nil && (errors.Is(err, sql.ErrNoRows) || containsConstraint(err.Error()))
-}
-func containsConstraint(message string) bool {
-	return len(message) > 0 && (message[0] == 'U' || message[0] == 'u' || message[0] == 'C' || message[0] == 'c')
+	if err == nil {
+		return false
+	}
+	if errors.Is(err, sql.ErrNoRows) {
+		return false
+	}
+	message := strings.ToLower(err.Error())
+	return strings.Contains(message, "constraint") || strings.Contains(message, "unique") || strings.Contains(message, "foreign key")
 }

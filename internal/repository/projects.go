@@ -11,6 +11,12 @@ import (
 
 type Projects struct{ DB *sql.DB }
 
+func (r Projects) PendingMilestones(ctx context.Context, projectID int64) (int, error) {
+	var count int
+	err := r.DB.QueryRowContext(ctx, `SELECT COUNT(*) FROM milestones WHERE project_id=? AND status <> 'completed'`, projectID).Scan(&count)
+	return count, err
+}
+
 func (r Projects) Create(ctx context.Context, p domain.Project) (domain.Project, error) {
 	now := time.Now().UTC()
 	res, err := r.DB.ExecContext(ctx, `INSERT INTO projects(name,region,target_hectares,status,budget_cents,created_at) VALUES(?,?,?,?,?,?)`, p.Name, p.Region, p.TargetHectares, string(domain.ProjectPlanned), p.BudgetCents, now.Format(time.RFC3339Nano))

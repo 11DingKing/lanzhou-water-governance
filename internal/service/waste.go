@@ -37,6 +37,13 @@ func (s Waste) Advance(ctx context.Context, user domain.User, id int64, from, to
 	if !domain.AllowedRole(user.Role, "manifest") {
 		return domain.Manifest{}, domain.ErrForbidden
 	}
+	current, err := s.Repo.Get(ctx, id)
+	if err != nil {
+		return domain.Manifest{}, err
+	}
+	if current.ProducerRegion == current.FacilityRegion || current.CarrierRegion == current.FacilityRegion {
+		return domain.Manifest{}, domain.ErrConflict
+	}
 	m, err := s.Repo.Transition(ctx, id, from, to, version)
 	if err != nil {
 		return m, err

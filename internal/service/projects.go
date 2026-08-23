@@ -42,6 +42,13 @@ func (s Projects) Accept(ctx context.Context, user domain.User, id, version int6
 	if user.Role != domain.RoleAdmin {
 		return domain.Project{}, domain.ErrForbidden
 	}
+	pending, err := s.Repo.PendingMilestones(ctx, id)
+	if err != nil {
+		return domain.Project{}, err
+	}
+	if pending > 0 {
+		return domain.Project{}, domain.ErrConflict
+	}
 	p, err := s.Repo.Transition(ctx, id, domain.ProjectBuilding, domain.ProjectAccepted, version)
 	if err == nil {
 		_ = s.Audit.Record(ctx, user.ID, requestID(ctx), "project", fmt.Sprint(id), "accept", "ok", map[string]any{"at": time.Now().UTC()})
